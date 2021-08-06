@@ -1,0 +1,70 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.9.0"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.9.0">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DBPASSWORD</name>
+          <defaultValue>{AQAAABAAAAAgZebQ69x60kjoGy8BMppRyOyZ427Fi2Kn8VgdyMdGUsLlXS7/rCCn8yBQABpwVQ5c}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DBUSER</name>
+          <defaultValue>{AQAAABAAAAAQVOD8crrUQoOTEeeECttXKllV2jcltMKmGaRdbSQduT4=}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>TOKEN</name>
+          <defaultValue>{AQAAABAAAAAwxSbwGStltm/ARSni5DYLQm0X85vgWlrarpAW0NjVngK4Zd8WCuPOFBuh4GYnsdW9U7XPkq5f0b2VNv/kmm9/gg==}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>ACCESS_KEY</name>
+          <defaultValue>{AQAAABAAAAAgNBWBXoORB/z8EqFMbgsqP+L8+XnTQxhOLVBMVSGeiyFf20bQYINQ9WoVT8HvykF4}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>SECRET_ACCESS</name>
+          <defaultValue>{AQAAABAAAAAwMrJClQu6RtavlNUepjkSRn4rPDuD6sOJ0IWQIbrLUCJKkxCyRTOR4Nr1aT7oaLFouqgX+T31Uo0w6Dcc67loCg==}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DATABASE</name>
+          <defaultValue>{AQAAABAAAABAHbM7ISJtXfCepca1jz9Uf4sI7IlMxHcYdYEHITtMd68ax65yRfxGfCaGsFlgz+vun/l6I+kCC6BACWcDIl5jqvYqqWFt0bX4jfpdDUccDgc=}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers/>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2.93">
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@4.8.1">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <url>https://github.com/SalamiSlicing/ProductManagement</url>
+          <credentialsId>github</credentialsId>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec>
+          <name>*/development</name>
+        </hudson.plugins.git.BranchSpec>
+      </branches>
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="empty-list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>Jenkinsfile</scriptPath>
+    <lightweight>true</lightweight>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

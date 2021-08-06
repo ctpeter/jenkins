@@ -1,0 +1,107 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.9.0"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.9.0">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description>SalamiHertCharts job trigger</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger@1.74">
+          <spec></spec>
+          <genericVariables>
+            <org.jenkinsci.plugins.gwt.GenericVariable>
+              <expressionType>JSONPath</expressionType>
+              <key>branch</key>
+              <value>$.ref</value>
+              <regexpFilter></regexpFilter>
+              <defaultValue></defaultValue>
+            </org.jenkinsci.plugins.gwt.GenericVariable>
+          </genericVariables>
+          <regexpFilterText>$branch</regexpFilterText>
+          <regexpFilterExpression>refs/heads/dev</regexpFilterExpression>
+          <printPostContent>false</printPostContent>
+          <printContributedVariables>false</printContributedVariables>
+          <causeString>Triggered by $branch</causeString>
+          <token>salamichart</token>
+          <tokenCredentialId></tokenCredentialId>
+          <silentResponse>false</silentResponse>
+          <overrideQuietPeriod>false</overrideQuietPeriod>
+        </org.jenkinsci.plugins.gwt.GenericTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.93">
+    <script>pipeline {
+    agent { node { label &apos;master&apos; } }
+    stages {
+        stage(&apos;Checkout&apos;){
+            steps {
+                git(
+                    url: &apos;https://github.com/SalamiSlicing/SalamiCharts&apos;,
+                    credentialsId: &apos;github&apos;,
+                    branch: &apos;dev&apos;
+                )
+            }
+        }
+        stage(&apos;Check&apos;) {
+            steps {
+                sh &apos;&apos;&apos;
+                export test2=$(git diff --name-only HEAD HEAD~1)
+                echo $test2
+                git diff --name-only HEAD HEAD~1 | sed &apos;s/.*charts\\///g&apos; | sed &quot;s/\\/.*//g&quot;
+                export test=$(git diff --name-only HEAD HEAD~1 | sed &quot;s/\\/.*//g&quot; | uniq)
+                for i in $(echo &quot;${test}&quot;); do
+                if [ $i == &quot;charts&quot; ];
+                then
+                echo &quot;Charts directory&quot;
+                echo &quot;Checking&quot;
+                git diff --name-only HEAD HEAD~1 | sed &apos;s/.*charts\\///g&apos; | sed &quot;s/\\/.*//g&quot; | uniq &gt; service.txt
+                else
+                echo &quot;Not charts directory&quot;
+                exit 1
+                fi
+                done
+                &apos;&apos;&apos;
+            }
+        }
+        stage(&apos;Trigger Branch Build&apos;) {
+            steps {
+            script {
+                def browsers =   readFile(file: &apos;service.txt&apos;) 
+                def lines = browsers.readLines()
+                
+                for(int i in lines) {
+                        println(i);
+                        if(i == &apos;cart-management&apos;) {
+                            build job: &apos;CartManagement_CI&apos;, wait: false
+                         } else if(i == &apos;iam&apos;) {
+                            build job: &apos;IAM_CI&apos;, wait: false
+                         } else if(i == &apos;product-management&apos;) {
+                            build job: &apos;ProductManagement_CI&apos;, wait: false
+                         } else if(i == &apos;order-management&apos;) {
+                            build job: &apos;OrderManagement_CI&apos;, wait: false
+                         } else if(i == &apos;user-management&apos;) {
+                            build job: &apos;UserManagement_CI&apos;, wait: false
+                        } else {
+                            echo &apos;No job to triggeer&apos;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>true</disabled>
+</flow-definition>

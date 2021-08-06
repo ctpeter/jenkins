@@ -1,0 +1,137 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.9.0"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.9.0">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DBPASSWORD</name>
+          <defaultValue>{AQAAABAAAAAgZebQ69x60kjoGy8BMppRyOyZ427Fi2Kn8VgdyMdGUsLlXS7/rCCn8yBQABpwVQ5c}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DBUSER</name>
+          <defaultValue>{AQAAABAAAAAQVOD8crrUQoOTEeeECttXKllV2jcltMKmGaRdbSQduT4=}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>TOKEN</name>
+          <defaultValue>{AQAAABAAAAAwxSbwGStltm/ARSni5DYLQm0X85vgWlrarpAW0NjVngK4Zd8WCuPOFBuh4GYnsdW9U7XPkq5f0b2VNv/kmm9/gg==}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>ACCESS_KEY</name>
+          <defaultValue>{AQAAABAAAAAgNBWBXoORB/z8EqFMbgsqP+L8+XnTQxhOLVBMVSGeiyFf20bQYINQ9WoVT8HvykF4}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>SECRET_ACCESS</name>
+          <defaultValue>{AQAAABAAAAAwMrJClQu6RtavlNUepjkSRn4rPDuD6sOJ0IWQIbrLUCJKkxCyRTOR4Nr1aT7oaLFouqgX+T31Uo0w6Dcc67loCg==}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DATABASE</name>
+          <defaultValue>{AQAAABAAAABAHbM7ISJtXfCepca1jz9Uf4sI7IlMxHcYdYEHITtMd68ax65yRfxGfCaGsFlgz+vun/l6I+kCC6BACWcDIl5jqvYqqWFt0bX4jfpdDUccDgc=}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <jenkins.triggers.ReverseBuildTrigger>
+          <spec></spec>
+          <upstreamProjects>ProductManagement_CI</upstreamProjects>
+          <threshold>
+            <name>SUCCESS</name>
+            <ordinal>0</ordinal>
+            <color>BLUE</color>
+            <completeBuild>true</completeBuild>
+          </threshold>
+        </jenkins.triggers.ReverseBuildTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.93">
+    <script>pipeline {
+    environment {
+        REGISTRY = &apos;salamislicing&apos;
+        REGISTRY_CREDENTIAL = &apos;salamislicing-docker&apos;
+        SERVICE = &apos;product-listing-service&apos;
+        CHARTSERVICE = &apos;product-management&apos;
+        CHARTS_DIR = &quot;${sh(script:&apos;mktemp -d | xargs echo -n&apos;, returnStdout: true)}&quot;
+    }
+    agent { node { label &apos;master&apos; } }
+    stages {
+       stage(&apos;Checkout&apos;){
+            steps {
+                sh &apos;&apos;&apos;
+                echo &quot;Salami Charts&quot;
+                git clone https://ctpeter:${TOKEN}@github.com/SalamiSlicing/SalamiCharts -b dev ${CHARTS_DIR}
+                echo ${CHARTS_DIR}/
+                if [ -d ProductManagement ];
+                then
+                rm -rf ProductManagement
+                git clone https://ctpeter:${TOKEN}@github.com/SalamiSlicing/ProductManagement -b development
+                else
+                git clone https://ctpeter:${TOKEN}@github.com/SalamiSlicing/ProductManagement -b development
+                fi
+                &apos;&apos;&apos;
+            }
+            
+        }
+        stage(&apos;Helm Package&apos;) {
+            steps {
+                    sh &apos;&apos;&apos;
+                    export VERSION=$(cat ProductManagement/pom.xml | grep version | head -3 | tail -1 | grep -v xml | awk -F &apos;&gt;|&lt;&apos; &apos;/version/ {print $3}&apos;)
+                    export KUBECONFIG=/var/lib/jenkins/k3s.yaml
+                    #CHARTVERSION=$(cat charts/${CHARTSERVICE}/Chart.yaml |  grep version | grep -v &apos;#&apos; | awk &apos;{print $2}&apos;)
+                    if [ -z $(ls -l ${CHARTS_DIR}/charts/${CHARTSERVICE} | grep &apos;^d&apos; | awk &apos;{print $9}&apos; | grep templates) ];
+                    then
+                    echo &quot;Getting the latest version&quot;
+                    CHARTVERSION=$(ls -l ${CHARTS_DIR}/charts/${CHARTSERVICE} | grep &apos;^d&apos; | awk &apos;{print $9}&apos; | sort -nr | head -1)
+                    PATH=$(echo ${CHARTSERVICE}/${CHARTVERSION})
+                    else
+                    echo &quot;Getting version&quot;
+                    #CHARTVERSION=$(cat ${CHARTS_DIR}/charts/${CHARTSERVICE}/Chart.yaml |  grep version | grep -v &apos;#&apos; | awk &apos;{print $2}&apos;)
+                    PATH=$(echo ${CHARTSERVICE})
+                    fi
+                    /usr/local/bin/helm package ${CHARTS_DIR}/charts/${PATH}
+                    &apos;&apos;&apos;
+            }
+        }
+        stage(&apos;Helm Upgrade&apos;) {
+            steps {
+                sh &apos;&apos;&apos;
+                export VERSION=$(cat ProductManagement/pom.xml | grep version | head -3 | tail -1 |grep -v xml | awk -F &apos;&gt;|&lt;&apos; &apos;/version/ {print $3}&apos;)
+                export KUBECONFIG=/var/lib/jenkins/k3s.yaml
+                if [ -z $(ls -l ${CHARTS_DIR}/charts/${CHARTSERVICE} | grep &apos;^d&apos; | awk &apos;{print $9}&apos; | grep templates) ];
+                then
+                echo &quot;Getting the latest version&quot;
+                CHARTVERSION=$(ls -l ${CHARTS_DIR}/charts/${CHARTSERVICE} | grep &apos;^d&apos; | awk &apos;{print $9}&apos; | sort -nr | head -1)
+                else
+                echo &quot;Getting version&quot;
+                CHARTVERSION=$(cat ${CHARTS_DIR}/charts/${CHARTSERVICE}/Chart.yaml |  grep version | grep -v &apos;#&apos; | awk &apos;{print $2}&apos;)
+                fi
+                /usr/local/bin/helm upgrade --debug --history-max=5 --install --set image.tag=${VERSION} --namespace=salami --timeout=10m0s --wait=true ${CHARTSERVICE} ${CHARTSERVICE}-${CHARTVERSION}.tgz
+                &apos;&apos;&apos;
+            }
+        }
+    }
+    post {
+        always {
+        slackSend color: &apos;#BADA55&apos;, channel: &apos;#jenkins-job-notification&apos;, message: &quot;&quot;&quot;${currentBuild.currentResult}: Job ${env.JOB_NAME} Build Number: ${env.BUILD_NUMBER}
+        More info at: ${env.BUILD_URL}
+        &quot;&quot;&quot;                   
+        }
+    }
+}
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

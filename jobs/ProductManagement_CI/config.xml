@@ -1,0 +1,162 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.9.0"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.9.0">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DBPASSWORD</name>
+          <defaultValue>{AQAAABAAAAAgZebQ69x60kjoGy8BMppRyOyZ427Fi2Kn8VgdyMdGUsLlXS7/rCCn8yBQABpwVQ5c}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DBUSER</name>
+          <defaultValue>{AQAAABAAAAAQVOD8crrUQoOTEeeECttXKllV2jcltMKmGaRdbSQduT4=}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>TOKEN</name>
+          <defaultValue>{AQAAABAAAAAwxSbwGStltm/ARSni5DYLQm0X85vgWlrarpAW0NjVngK4Zd8WCuPOFBuh4GYnsdW9U7XPkq5f0b2VNv/kmm9/gg==}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>ACCESS_KEY</name>
+          <defaultValue>{AQAAABAAAAAgNBWBXoORB/z8EqFMbgsqP+L8+XnTQxhOLVBMVSGeiyFf20bQYINQ9WoVT8HvykF4}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>SECRET_ACCESS</name>
+          <defaultValue>{AQAAABAAAAAwMrJClQu6RtavlNUepjkSRn4rPDuD6sOJ0IWQIbrLUCJKkxCyRTOR4Nr1aT7oaLFouqgX+T31Uo0w6Dcc67loCg==}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>DATABASE</name>
+          <defaultValue>{AQAAABAAAABAHbM7ISJtXfCepca1jz9Uf4sI7IlMxHcYdYEHITtMd68ax65yRfxGfCaGsFlgz+vun/l6I+kCC6BACWcDIl5jqvYqqWFt0bX4jfpdDUccDgc=}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>branch</name>
+          <defaultValue>refs/heads/development</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger@1.74">
+          <spec></spec>
+          <genericVariables>
+            <org.jenkinsci.plugins.gwt.GenericVariable>
+              <expressionType>JSONPath</expressionType>
+              <key>branch</key>
+              <value>$.ref</value>
+              <regexpFilter></regexpFilter>
+              <defaultValue></defaultValue>
+            </org.jenkinsci.plugins.gwt.GenericVariable>
+          </genericVariables>
+          <regexpFilterText>$branch</regexpFilterText>
+          <regexpFilterExpression>refs/heads/development</regexpFilterExpression>
+          <printPostContent>true</printPostContent>
+          <printContributedVariables>true</printContributedVariables>
+          <causeString>Triggered by $branch</causeString>
+          <token>pm</token>
+          <tokenCredentialId></tokenCredentialId>
+          <silentResponse>false</silentResponse>
+          <overrideQuietPeriod>false</overrideQuietPeriod>
+        </org.jenkinsci.plugins.gwt.GenericTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.93">
+    <script>pipeline {
+    environment {
+        REGISTRY = &apos;salamislicing&apos;
+        REGISTRY_CREDENTIAL = &apos;salamislicing-docker&apos;
+        SERVICE = &apos;product-listing-service&apos;
+        CHARTSERVICE = &apos;product-management&apos;
+        CHARTS_DIR = &quot;${sh(script:&apos;mktemp -d | xargs echo -n&apos;, returnStdout: true)}&quot;
+    }
+    agent { node { label &apos;master&apos; } }
+    stages {
+        stage(&apos;Checkout&apos;){
+            steps {
+                git(
+                    url: &apos;https://github.com/SalamiSlicing/ProductManagement.git&apos;,
+                    credentialsId: &apos;github&apos;,
+                    branch: &apos;development&apos;
+                )
+            }
+            
+        }
+        stage(&apos;Build&apos;) {
+            steps {
+                    sh &apos;&apos;&apos;
+                    echo ${JOB_NAME}
+                    /usr/local/apache-maven/bin/mvn package -Dmaven.test.skip=true
+                    &apos;&apos;&apos;
+            }
+        }
+        stage(&apos;Unit Tests&apos;) {
+            steps {
+                    sh &apos;/usr/local/apache-maven/bin/mvn test&apos;
+            }
+        }
+        stage(&apos;Integration Tests&apos;) {
+            steps {
+                    sh &apos;&apos;&apos;
+                     export AWS_ACCESS_KEY_ID=${ACCESS_KEY}
+                     export AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS}
+                     export DB_CONNECT_STRING=jdbc:postgresql://${DATABASE}:5432/postgres?currentSchema=concept
+                     export DB_USER=${DBUSER}
+                     export DB_PASSWORD=${DBPASSWORD}
+                    /usr/local/apache-maven/bin/mvn verify -DskipITs=false
+                    &apos;&apos;&apos;
+            }
+        }
+        stage(&apos;Docker Build&apos;) {
+            steps {
+                    sh &apos;&apos;&apos;
+                    export VERSION=$(cat pom.xml | grep version | head -3 | tail -1 |grep -v xml | awk -F &apos;&gt;|&lt;&apos; &apos;/version/ {print $3}&apos;)
+                    export IMAGE_ID=`docker image ls --filter reference=*${SERVICE}* -q`
+                    if [ -z $IMAGE_ID ];
+                    then
+                    echo &quot;No docker image to delete&quot;
+                    else
+                    echo &quot;Delete ${SERVICE} image&quot;
+                    docker image rm -f $IMAGE_ID
+                    fi
+                    docker build -t ${REGISTRY}:${SERVICE}-${VERSION} .
+                    export IMAGE_ID=`docker image ls --filter reference=*${SERVICE}* -q`
+                    docker tag $IMAGE_ID ${REGISTRY}/${SERVICE}:${VERSION}
+                    &apos;&apos;&apos;
+            }
+        }
+        stage(&apos;Docker Push&apos;) {
+            steps {
+                    withDockerRegistry([credentialsId: &quot;${REGISTRY_CREDENTIAL}&quot;,url: &quot;&quot;]) {
+                    sh &apos;&apos;&apos;
+                    export VERSION=$(cat pom.xml | grep version | head -3 | tail -1 |grep -v xml | awk -F &apos;&gt;|&lt;&apos; &apos;/version/ {print $3}&apos;)
+                    docker push ${REGISTRY}/${SERVICE}:${VERSION}
+                    &apos;&apos;&apos;
+                }
+
+            }
+        }
+    }
+    post {
+        always {
+        slackSend color: &apos;#BADA55&apos;, channel: &apos;#jenkins-job-notification&apos;, message: &quot;&quot;&quot;${currentBuild.currentResult}: Job ${env.JOB_NAME} Build Number: ${env.BUILD_NUMBER}
+        More info at: ${env.BUILD_URL}
+        &quot;&quot;&quot;                   
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

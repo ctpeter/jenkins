@@ -1,0 +1,53 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.9.0"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.9.0">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.93">
+    <script>def abortPreviousRunningBuilds() {
+  def hi = Hudson.instance
+  def pname = env.JOB_NAME.split(&apos;/&apos;)[0]
+
+  hi.getItem(pname).getItem(env.JOB_BASE_NAME).getBuilds().each{ build -&gt;
+    def exec = build.getExecutor()
+
+    if (build.number != currentBuild.number &amp;&amp; exec != null) {
+      exec.interrupt(
+        Result.ABORTED,
+        new CauseOfInterruption.UserInterruption(
+          &quot;Aborted by #${currentBuild.number}&quot;
+        )
+      )
+      println(&quot;Aborted previous running build #${build.number}&quot;)
+    } else {
+      println(&quot;Build is not running or is current build, not aborting - #${build.number}&quot;)
+    }
+  }
+}
+
+pipeline {
+    agent { node { label &apos;master&apos; } }
+    stages {
+        stage(&quot;Build&quot;) {
+            steps {
+                sh &apos;&apos;&apos;
+                sleep 50
+                &apos;&apos;&apos;
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
